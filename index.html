@@ -1,0 +1,613 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>FitTrack - Modern Interactive Navigation</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
+  <style>
+    /* Reset */
+    *, *::before, *::after {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    body {
+      font-family: 'Inter', sans-serif;
+      font-weight: 400;
+      line-height: 1.6;
+      background: linear-gradient(135deg, #d7fdef, #059669);
+      min-height: 200vh;
+      color: #1e293b;
+      scroll-behavior: smooth;
+      overflow-x: hidden;
+    }
+    a {
+      text-decoration: none;
+      color: inherit;
+      position: relative;
+      z-index: 2;
+      transition: color 0.4s cubic-bezier(0.4,0,0.2,1);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      user-select: none;
+      cursor: pointer;
+    }
+    a .material-icons {
+      font-size: 20px;
+      transition: transform 0.4s ease, color 0.4s ease;
+      color: #059669;
+      filter: drop-shadow(0 0 1px #059669aa);
+      will-change: transform, filter;
+    }
+    a:hover .material-icons,
+    a:focus-visible .material-icons {
+      transform: translateX(5px) scale(1.3) rotate(15deg);
+      color: #22c55e;
+      filter: drop-shadow(0 0 8px #22c55e);
+    }
+
+    /* Header */
+    header {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      background-color: rgba(255 255 255 / 0.85);
+      backdrop-filter: saturate(180%) blur(14px);
+      box-shadow: none;
+      transition: background-color 0.6s ease, box-shadow 0.6s ease, transform 0.5s ease;
+      z-index: 1100;
+      border-bottom-left-radius: 0;
+      border-bottom-right-radius: 0;
+      user-select: none;
+      will-change: background-color, box-shadow, transform;
+    }
+    header.scrolled {
+      background: linear-gradient(120deg, #059669dd 15%, #22c55edd 85%);
+      backdrop-filter: saturate(200%) blur(18px);
+      box-shadow: 0 12px 34px rgba(5, 150, 105, 0.55);
+      border-bottom-left-radius: 24px;
+      border-bottom-right-radius: 24px;
+      transform: translateZ(0) translateY(-2px);
+      animation: headerShift 8s ease-in-out infinite alternate;
+    }
+    @keyframes headerShift {
+      0% { filter: drop-shadow(0 0 6px rgba(5, 150, 105, 0.2)); }
+      100% { filter: drop-shadow(0 0 14px rgba(34, 197, 94, 0.5)); }
+    }
+
+    /* Scroll progress bar */
+    #scroll-progress {
+      position: fixed;
+      top: 0;
+      left: 0;
+      height: 6px;
+      background: linear-gradient(90deg, #34d399, #059669, #22c55e);
+      width: 0%;
+      z-index: 1150;
+      border-radius: 0 0 16px 0;
+      filter: drop-shadow(0 0 6px #34d399);
+      transition: width 0.35s ease;
+    }
+
+    /* Header container */
+    .header-container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 32px;
+      height: 72px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+    }
+
+    /* Logo */
+    .logo {
+      font-weight: 800;
+      font-size: 1.7rem;
+      color: #059669;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      transition: color 0.5s ease, transform 0.5s ease;
+      will-change: transform, color;
+      user-select: none;
+      white-space: nowrap;
+    }
+    .logo .material-icons {
+      font-size: 32px;
+      transition: transform 0.7s ease-in-out;
+      animation: pulseGlow 5s ease-in-out infinite;
+      color: #059669;
+      filter: drop-shadow(0 0 2px #22c55e);
+    }
+    header.scrolled .logo {
+      color: #d7fdef;
+      transform: scale(1.18);
+    }
+    header.scrolled .logo .material-icons {
+      animation-play-state: paused;
+      transform: rotate(25deg);
+      color: #a7f3d0;
+      filter: drop-shadow(0 0 12px #a7f3d0);
+    }
+    @keyframes pulseGlow {
+      0%, 100% {
+        filter: drop-shadow(0 0 5px #22c55e);
+        transform: scale(1);
+        color: #059669;
+      }
+      50% {
+        filter: drop-shadow(0 0 25px #86efac);
+        transform: scale(1.3);
+        color: #34d399;
+      }
+    }
+
+    /* Navigation */
+    nav {
+      display: flex;
+      align-items: center;
+      gap: 44px;
+      position: relative;
+      user-select: none;
+      overflow-x: auto;
+      scrollbar-width: none; /* Firefox */
+      -ms-overflow-style: none;  /* IE and Edge */
+    }
+    nav::-webkit-scrollbar {
+      display: none;
+    }
+    nav a {
+      font-weight: 600;
+      font-size: 1.12rem;
+      color: #1e293b;
+      border-radius: 16px;
+      padding: 10px 14px 8px 14px;
+      transition:
+        color 0.4s ease,
+        background-color 0.4s ease,
+        box-shadow 0.4s ease,
+        transform 0.3s ease;
+      position: relative;
+      z-index: 10;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+    header.scrolled nav a {
+      color: #d7fdef;
+      filter: drop-shadow(0 0 2px rgba(255 255 255 / 0.85));
+    }
+    nav a:hover,
+    nav a:focus-visible {
+      color: #059669;
+      background: #d7fdef;
+      box-shadow:
+        0 8px 22px rgba(5, 150, 105, 0.4),
+        inset 0 0 14px rgba(52, 211, 153, 0.3);
+      outline-offset: 6px;
+      outline-color: #22c55e;
+      outline-style: solid;
+      outline-width: 3px;
+      transform: translateY(-3px) scale(1.07);
+    }
+    header.scrolled nav a:hover,
+    header.scrolled nav a:focus-visible {
+      color: #22c55e;
+      background: #065f46;
+      box-shadow:
+        0 10px 32px rgba(34, 197, 94, 0.7),
+        inset 0 0 20px rgba(34, 197, 94, 0.5);
+      outline-color: #86efac;
+    }
+    nav a.active {
+      color: #059669;
+      font-weight: 700;
+      filter: drop-shadow(0 0 6px #22c55e);
+      box-shadow: 0 0 16px #22c55e inset;
+      background: #d7fdef88;
+    }
+    header.scrolled nav a.active {
+      color: #a7f3d0;
+      filter: drop-shadow(0 0 14px #a7f3d0);
+      box-shadow: 0 0 30px #a7f3d0 inset;
+      background: #065f46cc;
+    }
+
+
+    /* Sliding glowing underline */
+    nav::before {
+      content: "";
+      position: absolute;
+      bottom: 8px;
+      left: 0;
+      height: 5px;
+      width: 0;
+      border-radius: 16px;
+      background: linear-gradient(270deg, #22c55e, #86efac, #22c55e, #059669);
+      background-size: 700% 700%;
+      animation: glowGradient 12s ease infinite;
+      transition: left 0.35s cubic-bezier(0.4,0,0.2,1), width 0.35s cubic-bezier(0.4,0,0.2,1);
+      pointer-events: none;
+      z-index: 9;
+      will-change: left, width;
+    }
+    header.scrolled nav::before {
+      background: linear-gradient(270deg, #a7f3d0, #22c55e, #a7f3d0);
+      animation: glowGradientAlt 12s ease infinite;
+    }
+    @keyframes glowGradient {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+    @keyframes glowGradientAlt {
+      0% { background-position: 100% 50%; }
+      50% { background-position: 0% 50%; }
+      100% { background-position: 100% 50%; }
+    }
+
+    /* Hamburger menu button */
+    .menu-toggle {
+      display: none;
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      position: relative;
+      width: 40px;
+      height: 28px;
+      flex-shrink: 0;
+      -webkit-tap-highlight-color: transparent;
+      z-index: 1150;
+      user-select: none;
+      filter: drop-shadow(0 0 3px #059669cc);
+      transition: filter 0.5s ease;
+    }
+    .menu-toggle:hover {
+      filter: drop-shadow(0 0 10px #22c55e);
+    }
+    /* Hamburger lines */
+    .menu-toggle span,
+    .menu-toggle span::before,
+    .menu-toggle span::after {
+      display: block;
+      background-color: #059669;
+      height: 4px;
+      border-radius: 4px;
+      position: absolute;
+      width: 100%;
+      left: 0;
+      box-shadow: 0 0 6px #059669cc;
+      transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+      will-change: transform, top, opacity, background-color;
+    }
+    .menu-toggle span {
+      top: 50%;
+      transform: translateY(-50%);
+      box-shadow: 0 0 8px #059669cc;
+    }
+    .menu-toggle span::before {
+      content: '';
+      top: -12px;
+      box-shadow: 0 0 10px #059669cc;
+    }
+    .menu-toggle span::after {
+      content: '';
+      top: 12px;
+      box-shadow: 0 0 10px #059669cc;
+    }
+    /* When open, transform lines into X */
+    .menu-toggle.open span {
+      background-color: transparent;
+      box-shadow: none;
+      animation: bounceLine 0.4s ease forwards;
+    }
+    .menu-toggle.open span::before {
+      top: 0;
+      transform: rotate(45deg);
+      background-color: #a7f3d0;
+      box-shadow: 0 0 15px #a7f3d0;
+      animation: bounceLine 0.4s ease forwards;
+    }
+    .menu-toggle.open span::after {
+      top: 0;
+      transform: rotate(-45deg);
+      background-color: #a7f3d0;
+      box-shadow: 0 0 15px #a7f3d0;
+      animation: bounceLine 0.4s ease forwards;
+    }
+    header.scrolled .menu-toggle span,
+    header.scrolled .menu-toggle span::before,
+    header.scrolled .menu-toggle span::after {
+      background-color: #a7f3d0;
+      box-shadow: 0 0 10px #a7f3d0cc;
+    }
+    @keyframes bounceLine {
+      0%,100% { transform: translateY(0); }
+      50% { transform: translateY(-5px);}
+    }
+
+    /* Mobile nav */
+    .mobile-nav {
+      position: fixed;
+      top: 72px;
+      left: 0;
+      width: 100%;
+      background-color: #059669;
+      border-bottom-left-radius: 28px;
+      border-bottom-right-radius: 28px;
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.6s cubic-bezier(0.4, 0, 0.2, 1), padding 0.5s ease;
+      padding: 0 36px;
+      box-shadow:
+        0 10px 34px rgba(5, 150, 105, 0.45),
+        inset 0 6px 16px rgba(255 255 255 / 0.25);
+      z-index: 1050;
+    }
+    .mobile-nav.open {
+      max-height: 460px;
+      padding-top: 28px;
+      padding-bottom: 28px;
+    }
+    .mobile-nav a {
+      display: block;
+      padding: 18px 0;
+      font-weight: 700;
+      font-size: 1.35rem;
+      color: #d7fdef;
+      border-radius: 14px;
+      margin-bottom: 20px;
+      position: relative;
+      overflow: hidden;
+      cursor: pointer;
+      transition:
+        background-color 0.5s ease,
+        color 0.5s ease,
+        box-shadow 0.5s ease;
+      filter: drop-shadow(0 0 3px #22c55ecc);
+      user-select: none;
+    }
+    .mobile-nav a::after {
+      content: "";
+      position: absolute;
+      left: 16px;
+      bottom: 8px;
+      width: 0;
+      height: 4px;
+      background: #a7f3d0;
+      border-radius: 8px;
+      transition: width 0.5s ease;
+      z-index: 1;
+      box-shadow: 0 0 16px #a7f3d0aa;
+    }
+    .mobile-nav a:hover,
+    .mobile-nav a:focus-visible {
+      background-color: #34d399;
+      color: #064e3b;
+      outline-offset: 5px;
+      outline-color: #22c55e;
+      outline-style: solid;
+      outline-width: 4px;
+      box-shadow: 0 6px 20px rgba(52, 211, 153, 0.7);
+      filter: drop-shadow(0 0 8px #22c55e);
+    }
+    .mobile-nav a:hover::after,
+    .mobile-nav a:focus-visible::after {
+      width: calc(100% - 32px);
+      left: 16px;
+    }
+    .mobile-nav a .material-icons {
+      vertical-align: middle;
+      margin-right: 10px;
+      font-size: 28px;
+      color: #d7fdef;
+      filter: drop-shadow(0 0 5px #34d399cc);
+      transition: transform 0.4s ease;
+    }
+    .mobile-nav a:hover .material-icons,
+    .mobile-nav a:focus-visible .material-icons {
+      transform: scale(1.4) rotate(18deg);
+      filter: drop-shadow(0 0 16px #86efac);
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      nav.desktop-nav {
+        display: none;
+      }
+      .menu-toggle {
+        display: block;
+      }
+    }
+    @media (min-width: 769px) {
+      .mobile-nav {
+        display: none;
+      }
+    }
+    /* Accessibility focus */
+    a:focus-visible,
+    button:focus-visible {
+      outline-offset: 6px;
+      outline-color: #059669;
+      outline-style: solid;
+      outline-width: 4px;
+      transition: outline-color 0.4s ease;
+    }
+  </style>
+</head>
+<body>
+  <div id="scroll-progress" aria-hidden="true"></div>
+  <header id="page-header" role="banner" aria-label="Primary site header">
+    <div class="header-container">
+      <a href="#" class="logo" aria-label="Homepage with FitTrack logo" tabindex="0">
+        <span class="material-icons" aria-hidden="true" focusable="false">fitness_center</span>
+        FitTrack
+      </a>
+      <nav class="desktop-nav" role="navigation" aria-label="Primary navigation">
+        <a href="#home" tabindex="0" aria-current="page"><span class="material-icons" aria-hidden="true" focusable="false">home</span>Home</a>
+        <a href="#features" tabindex="0"><span class="material-icons" aria-hidden="true" focusable="false">star</span>Features</a>
+        <a href="#pricing" tabindex="0"><span class="material-icons" aria-hidden="true" focusable="false">attach_money</span>Pricing</a>
+        <a href="#about" tabindex="0"><span class="material-icons" aria-hidden="true" focusable="false">info</span>About</a>
+        <a href="#contact" tabindex="0"><span class="material-icons" aria-hidden="true" focusable="false">mail</span>Contact</a>
+      </nav>
+      <button class="menu-toggle" aria-label="Toggle menu" aria-expanded="false" aria-controls="mobile-nav">
+        <span></span>
+      </button>
+    </div>
+    <nav id="mobile-nav" class="mobile-nav" role="navigation" aria-label="Mobile primary navigation">
+      <a href="#home" tabindex="-1"><span class="material-icons" aria-hidden="true" focusable="false">home</span> Home</a>
+      <a href="#features" tabindex="-1"><span class="material-icons" aria-hidden="true" focusable="false">star</span> Features</a>
+      <a href="#pricing" tabindex="-1"><span class="material-icons" aria-hidden="true" focusable="false">attach_money</span> Pricing</a>
+      <a href="#about" tabindex="-1"><span class="material-icons" aria-hidden="true" focusable="false">info</span> About</a>
+      <a href="#contact" tabindex="-1"><span class="material-icons" aria-hidden="true" focusable="false">mail</span> Contact</a>
+    </nav>
+  </header>
+
+  <main style="padding-top: 90px; max-width: 900px; margin: 0 auto;">
+    <section id="home" style="padding: 48px 24px 160px;">
+      <h1>Welcome to FitTrack</h1>
+    </section>
+    <section id="features" style="padding: 96px 24px;">
+      <h2>Features</h2>
+      <ul style="list-style: inside disc; font-size: 1.15rem; line-height: 1.8;">
+        <li>Workout routines & exercise library</li>
+        <li>Progress tracking & detailed analytics</li>
+        <li>Nutrition & hydration logs</li>
+        <li>Goal setting & milestones</li>
+        <li>Social challenges & leaderboards</li>
+      </ul>
+    </section>
+    <section id="pricing" style="padding: 96px 24px;">
+      <h2>Pricing</h2>
+      <p>Flexible plans for everyone, including a free tier.</p>
+    </section>
+    <section id="about" style="padding: 96px 24px;">
+      <h2>About Us</h2>
+      <p>Learn about our mission to empower healthy lifestyles.</p>
+    </section>
+    <section id="contact" style="padding: 96px 24px 160px;">
+      <h2>Contact</h2>
+      <p>Get in touch with support or sales.</p>
+    </section>
+  </main>
+
+  <script>
+    (() => {
+      const header = document.getElementById('page-header');
+      const menuToggle = header.querySelector('.menu-toggle');
+      const mobileNav = document.getElementById('mobile-nav');
+      const desktopNav = header.querySelector('nav.desktop-nav');
+      const navLinks = desktopNav.querySelectorAll('a');
+      const mobileLinks = mobileNav.querySelectorAll('a');
+      const scrollProgress = document.getElementById('scroll-progress');
+      const scrollThreshold = 80;
+
+      // Toggle mobile nav
+      menuToggle.addEventListener('click', () => {
+        const isOpen = mobileNav.classList.toggle('open');
+        menuToggle.classList.toggle('open', isOpen);
+        menuToggle.setAttribute('aria-expanded', isOpen);
+        mobileLinks.forEach(link => {
+          link.tabIndex = isOpen ? 0 : -1;
+        });
+        if (isOpen) mobileNav.querySelector('a').focus();
+      });
+
+      // On scroll: update header style, progress bar, and active links
+      function onScroll() {
+        const scrollY = window.scrollY;
+        if (scrollY > scrollThreshold) {
+          header.classList.add('scrolled');
+        } else {
+          header.classList.remove('scrolled');
+        }
+        // Scroll progress bar
+        const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+        const scrolledPercent = (docHeight > 0) ? (scrollY / docHeight) * 100 : 0;
+        scrollProgress.style.width = \`\${scrolledPercent}%\`;
+        // Update active link by viewport position
+        let currentSectionId = null;
+        document.querySelectorAll('main section[id]').forEach(section => {
+          const rect = section.getBoundingClientRect();
+          if (rect.top <= 80 && rect.bottom > 80) {
+            currentSectionId = section.id;
+          }
+        });
+        navLinks.forEach(link => {
+          if (link.getAttribute('href') === \`#\${currentSectionId}\`) {
+            link.classList.add('active');
+            link.setAttribute('aria-current', 'page');
+          } else {
+            link.classList.remove('active');
+            link.removeAttribute('aria-current');
+          }
+        });
+        moveUnderlineTo(document.querySelector('nav.desktop-nav a.active'));
+      }
+
+      window.addEventListener('scroll', onScroll);
+
+      // Sliding glowing underline setup
+      const nav = desktopNav;
+      const underline = document.createElement('span');
+      underline.style.position = 'absolute';
+      underline.style.bottom = '8px';
+      underline.style.height = '5px';
+      underline.style.borderRadius = '16px';
+      underline.style.background = 'linear-gradient(270deg, #22c55e, #86efac, #22c55e, #059669)';
+      underline.style.backgroundSize = '700% 700%';
+      underline.style.animation = 'glowGradient 12s ease infinite';
+      underline.style.transition = 'left 0.35s cubic-bezier(0.4,0,0.2,1), width 0.35s cubic-bezier(0.4,0,0.2,1)';
+      underline.style.willChange = 'left, width';
+      underline.style.pointerEvents = 'none';
+      underline.style.zIndex = '9';
+      nav.style.position = 'relative';
+      nav.appendChild(underline);
+
+      function moveUnderlineTo(element) {
+        if (!element) {
+          underline.style.width = '0';
+          return;
+        }
+        const navRect = nav.getBoundingClientRect();
+        const elRect = element.getBoundingClientRect();
+        underline.style.left = (elRect.left - navRect.left) + 'px';
+        underline.style.width = elRect.width + 'px';
+      }
+
+      let currentActive = document.querySelector('nav.desktop-nav a.active') || navLinks[0];
+      moveUnderlineTo(currentActive);
+
+      navLinks.forEach(link => {
+        link.addEventListener('mouseenter', () => moveUnderlineTo(link));
+        link.addEventListener('focus', () => moveUnderlineTo(link));
+        link.addEventListener('mouseleave', () => moveUnderlineTo(document.querySelector('nav.desktop-nav a.active') || navLinks[0]));
+        link.addEventListener('blur', () => moveUnderlineTo(document.querySelector('nav.desktop-nav a.active') || navLinks[0]));
+      });
+
+      // Close mobile nav on link click for better UX
+      mobileLinks.forEach(link => {
+        link.addEventListener('click', () => {
+          if (mobileNav.classList.contains('open')) {
+            mobileNav.classList.remove('open');
+            menuToggle.classList.remove('open');
+            menuToggle.setAttribute('aria-expanded', 'false');
+            mobileLinks.forEach(lnk => lnk.tabIndex = -1);
+            menuToggle.focus();
+          }
+        });
+      });
+
+      // Initial check
+      onScroll();
+    })();
+  </script>
+</body>
+</html>
+
